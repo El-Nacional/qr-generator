@@ -1,23 +1,22 @@
-# QR Code Generator
+# Generador de códigos QR — El Nacional
 
-A simple, client-side QR code generator designed to be hosted with GitHub Pages.
+Herramienta web estática para crear códigos QR con la identidad visual de **El Nacional**. Está diseñada para publicarse con GitHub Pages y funciona completamente en el navegador, sin backend ni base de datos.
 
-The application runs entirely in the browser. It does not require a backend or database.
+## Funciones
 
-## Features
+- URL o texto libre.
+- Contactos en formato **vCard 3.0**.
+- Credenciales de redes **Wi‑Fi**.
+- Tamaño configurable.
+- Colores de primer plano y fondo.
+- Color predeterminado de El Nacional: `#002992`.
+- Nivel de corrección de errores configurable; el valor predeterminado es **Bajo (L)**.
+- Diferentes estilos para los módulos del QR.
+- Logotipo opcional dentro del código QR.
+- Descarga en PNG o SVG.
+- Interfaz responsive en español.
 
-- Generate QR codes from URLs or arbitrary text
-- Adjust QR code size
-- Choose foreground and background colors
-- Select different QR dot styles
-- Configure QR error correction
-- Upload an optional logo
-- Download QR codes as PNG
-- Download QR codes as SVG
-- Responsive interface
-- No server-side processing
-
-## Project Structure
+## Estructura
 
 ```text
 qr-generator/
@@ -27,246 +26,124 @@ qr-generator/
 └── README.md
 ```
 
-## How It Works
+## Identidad de El Nacional
 
-The application uses HTML, CSS, and JavaScript.
+La interfaz utiliza el logotipo oficial indicado en:
 
-QR codes are generated in the browser using the `qr-code-styling` JavaScript library.
-
-The library is loaded from a CDN:
-
-```html
-<script
-  defer
-  src="https://unpkg.com/qr-code-styling@1.9.2/lib/qr-code-styling.js"
-></script>
+```text
+https://www.elnacional.com/wp-content/themes/elnacional/src/assets/images/Logo_El_Nacional_white.svg
 ```
 
-No QR code content or uploaded logo is sent to a backend operated by this project.
+El encabezado lo usa como una máscara CSS y aplica el color `#002992`. De esta manera se conserva la forma del SVG original y se muestra en azul.
 
-Note that because the QR library is loaded from a third-party CDN, the browser must be able to access that CDN for the generator to work.
+> Nota: lo ideal para producción es guardar una copia local del SVG dentro del repositorio. El entorno usado para preparar esta versión no pudo recuperar directamente el contenido SVG desde ese endpoint, por lo que esta revisión referencia el archivo original remotamente.
 
-## Running Locally
+## Tipos de QR
 
-Because this is a static website, you can open `index.html` directly in a browser.
+### URL o texto
 
-For development, it is usually preferable to run a simple local web server.
+Codifica directamente una URL o una cadena de texto.
 
-For example, using Python:
+### vCard
+
+Genera una vCard 3.0 con campos para nombre, apellido, organización, cargo, teléfono, correo electrónico, web y dirección. Al escanearla, los teléfonos compatibles pueden ofrecer guardar el contacto.
+
+### Wi‑Fi
+
+Genera una cadena compatible con lectores QR para redes WPA/WPA2/WPA3, WEP o redes sin contraseña, incluyendo soporte para redes ocultas.
+
+## Corrección de errores
+
+La herramienta permite seleccionar:
+
+- **L — Baja**: valor predeterminado; menor densidad del QR.
+- **M — Media**.
+- **Q — Cuartil**.
+- **H — Alta**: recomendable cuando se coloca un logotipo encima del código.
+
+## Ejecutar localmente
+
+Puedes abrir `index.html` directamente, aunque para desarrollo es preferible utilizar un servidor web local.
+
+Con Python:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open:
+Después abre:
 
 ```text
 http://localhost:8000
 ```
 
-## Publishing with GitHub Pages
+## Publicar con GitHub Pages
 
-GitHub Pages can publish the website directly from the repository.
+1. Crea un repositorio en GitHub.
+2. Añade `index.html`, `styles.css`, `app.js` y `README.md` en la raíz.
+3. Haz commit y push a `main`.
+4. En GitHub abre **Settings → Pages**.
+5. En **Build and deployment**, selecciona **Deploy from a branch**.
+6. Selecciona `main` y `/ (root)`.
+7. Guarda la configuración.
 
-### 1. Create a GitHub Repository
-
-Create a new repository, for example:
-
-```text
-qr-generator
-```
-
-### 2. Add the Project Files
-
-Add these files to the root of the repository:
+La URL normalmente tendrá esta forma:
 
 ```text
-index.html
-styles.css
-app.js
-README.md
+https://TU-USUARIO.github.io/NOMBRE-DEL-REPOSITORIO/
 ```
 
-Commit and push the files to the `main` branch.
+## Dominio personalizado
 
-### 3. Enable GitHub Pages
-
-In the GitHub repository:
-
-1. Open **Settings**
-2. Select **Pages**
-3. Under **Build and deployment**, choose **Deploy from a branch**
-4. Select the `main` branch
-5. Select `/ (root)`
-6. Click **Save**
-
-GitHub will then publish the website.
-
-The address will normally look like:
+GitHub Pages permite configurar un dominio propio, por ejemplo:
 
 ```text
-https://YOUR-USERNAME.github.io/qr-generator/
+qr.elnacional.com
 ```
 
-## Using a Custom Domain
+Se configura en **Settings → Pages → Custom domain** y requiere los registros DNS correspondientes.
 
-GitHub Pages also supports custom domains.
+## Dependencia
 
-For example:
+La generación de códigos QR utiliza `qr-code-styling` 1.9.2 desde `unpkg`:
+
+```html
+<script defer src="https://unpkg.com/qr-code-styling@1.9.2/lib/qr-code-styling.js"></script>
+```
+
+Para una herramienta corporativa en producción conviene guardar también esta dependencia dentro del repositorio y eliminar la dependencia del CDN externo.
+
+## Privacidad
+
+Los datos introducidos se procesan en el navegador. Esta aplicación no incluye un backend y no envía intencionalmente el contenido de los QR, las credenciales Wi‑Fi ni las imágenes cargadas a un servidor propio.
+
+## Antes de publicar un QR
+
+1. Comprueba el QR con varios teléfonos.
+2. Verifica el destino o los datos codificados.
+3. Pruébalo al tamaño físico en que será impreso.
+4. Mantén buen contraste entre el código y el fondo.
+5. Si colocas un logotipo dentro del QR, usa una corrección de errores mayor y vuelve a probarlo.
+
+## Otros tipos que se pueden añadir
+
+Tipos útiles para una futura versión:
+
+- correo electrónico (`mailto:`),
+- llamada telefónica (`tel:`),
+- SMS,
+- WhatsApp,
+- ubicación geográfica,
+- eventos de calendario (`VEVENT` / iCalendar).
+
+En la mayoría de los casos conviene añadirlos solo si El Nacional tiene un uso concreto para ellos, ya que URL, vCard y Wi‑Fi cubren gran parte de los casos generales.
+
+## Identidad de El Nacional
+
+El logotipo de El Nacional se incluye localmente en:
 
 ```text
-qr.example.com
+assets/logo-el-nacional.svg
 ```
 
-A custom domain can be configured under:
-
-```text
-Repository → Settings → Pages → Custom domain
-```
-
-You will also need to configure the appropriate DNS records with your DNS provider.
-
-For a subdomain such as:
-
-```text
-qr.example.com
-```
-
-you would typically create a `CNAME` DNS record pointing to:
-
-```text
-YOUR-USERNAME.github.io
-```
-
-Refer to the current GitHub Pages documentation before changing production DNS settings.
-
-## QR Error Correction
-
-The generator supports the four standard QR error correction levels:
-
-- **L** — Low
-- **M** — Medium
-- **Q** — Quartile
-- **H** — High
-
-Higher error correction makes QR codes more tolerant of missing or obscured areas but generally produces denser codes.
-
-If a logo is placed in the center of the QR code, **High (H)** error correction is recommended.
-
-## Logo Usage
-
-The generator allows an image to be placed in the center of the QR code.
-
-Supported browser image formats include:
-
-- PNG
-- JPEG
-- WebP
-- SVG
-
-Large logos can make QR codes harder to scan.
-
-Always test QR codes with multiple devices before publishing or printing them.
-
-## PNG vs. SVG
-
-### PNG
-
-PNG is useful for:
-
-- presentations
-- websites
-- email
-- documents
-- general digital use
-
-### SVG
-
-SVG is vector-based and is preferable for:
-
-- professional printing
-- large-format graphics
-- signs
-- marketing materials
-- design software
-
-SVG files can be scaled without losing quality.
-
-## Production Recommendations
-
-Before using a generated QR code publicly:
-
-1. Scan-test it with multiple phones.
-2. Verify the encoded destination.
-3. Test the QR code at its intended physical size.
-4. Maintain sufficient contrast between foreground and background.
-5. Avoid placing critical artwork over the QR code.
-6. Use high error correction when including a logo.
-7. Test printed proofs before producing large quantities.
-
-## Dependencies
-
-This project currently uses:
-
-```text
-qr-code-styling
-```
-
-Project:
-
-```text
-https://github.com/kozakdenys/qr-code-styling
-```
-
-The browser version is loaded from `unpkg`.
-
-For a production company tool, you may eventually want to vendor the JavaScript dependency into the repository instead of relying on a third-party CDN.
-
-That would make the application self-contained and reduce reliance on an external service.
-
-## Security and Privacy
-
-The application does not require a backend.
-
-QR code generation happens in the user's browser.
-
-Uploaded logo images are read using the browser's `FileReader` API and used locally to generate the QR code.
-
-The application itself does not intentionally transmit:
-
-- QR code content
-- uploaded logos
-- generated QR codes
-
-to a server.
-
-However, the QR-generation JavaScript library is currently loaded from a third-party CDN. Organizations with stricter security or privacy requirements should consider hosting that dependency locally.
-
-## License
-
-Add the license appropriate for your organization before distributing or publishing the project.
-
-Common options include:
-
-- MIT
-- Apache 2.0
-- Proprietary / internal use
-
-## Future Improvements
-
-Possible additions include:
-
-- Company branding
-- Preset company colors
-- Default company logo
-- Saved QR presets
-- Wi-Fi QR code generation
-- vCard/contact QR codes
-- Email QR codes
-- Phone-number QR codes
-- SMS QR codes
-- UTM campaign builder
-- Automatic URL validation
-- QR scanability checks
-- Branded file naming
-- Local hosting of the QR-generation library
+El SVG usa el color corporativo `#002992`, por lo que la cabecera no depende de cargar el logotipo desde un servidor externo.

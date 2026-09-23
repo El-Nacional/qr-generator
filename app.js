@@ -1,370 +1,154 @@
 (() => {
   const defaults = {
-    data: "https://example.com",
+    type: "text",
+    data: "https://www.elnacional.com/",
     size: 360,
-    foreground: "#111827",
+    foreground: "#002992",
     background: "#ffffff",
-    errorCorrection: "H",
+    errorCorrection: "L",
     dotStyle: "square"
   };
 
+  const $ = selector => document.querySelector(selector);
+  const $$ = selector => [...document.querySelectorAll(selector)];
+
   const elements = {
-    form: document.querySelector("#qr-form"),
-
-    data: document.querySelector("#qr-data"),
-
-    size: document.querySelector("#qr-size"),
-    sizeOutput: document.querySelector("#qr-size-output"),
-
-    errorCorrection:
-      document.querySelector("#error-correction"),
-
-    foreground:
-      document.querySelector("#foreground-color"),
-
-    foregroundHex:
-      document.querySelector("#foreground-hex"),
-
-    background:
-      document.querySelector("#background-color"),
-
-    backgroundHex:
-      document.querySelector("#background-hex"),
-
-    dotStyle:
-      document.querySelector("#dot-style"),
-
-    logoFile:
-      document.querySelector("#logo-file"),
-
-    removeLogo:
-      document.querySelector("#remove-logo"),
-
-    downloadPng:
-      document.querySelector("#download-png"),
-
-    downloadSvg:
-      document.querySelector("#download-svg"),
-
-    reset:
-      document.querySelector("#reset-form"),
-
-    preview:
-      document.querySelector("#qr-preview"),
-
-    status:
-      document.querySelector("#status")
+    form: $("#qr-form"), type: $("#qr-type"), data: $("#qr-data"), size: $("#qr-size"), sizeOutput: $("#qr-size-output"),
+    errorCorrection: $("#error-correction"), foreground: $("#foreground-color"), foregroundHex: $("#foreground-hex"),
+    background: $("#background-color"), backgroundHex: $("#background-hex"), dotStyle: $("#dot-style"), logoFile: $("#logo-file"),
+    removeLogo: $("#remove-logo"), downloadPng: $("#download-png"), downloadSvg: $("#download-svg"), reset: $("#reset-form"),
+    preview: $("#qr-preview"), status: $("#status"),
+    vFirst: $("#vcard-first-name"), vLast: $("#vcard-last-name"), vOrg: $("#vcard-organization"), vTitle: $("#vcard-title"),
+    vPhone: $("#vcard-phone"), vEmail: $("#vcard-email"), vUrl: $("#vcard-url"), vAddress: $("#vcard-address"),
+    vCity: $("#vcard-city"), vRegion: $("#vcard-region"), vPostal: $("#vcard-postal"), vCountry: $("#vcard-country"),
+    wifiSsid: $("#wifi-ssid"), wifiSecurity: $("#wifi-security"), wifiPassword: $("#wifi-password"), wifiHidden: $("#wifi-hidden")
   };
 
   let qrCode;
   let logoDataUrl = "";
 
-  function setStatus(message) {
-    elements.status.textContent = message;
+  const setStatus = message => { elements.status.textContent = message; };
+  const isHexColor = value => /^#[0-9a-f]{6}$/i.test(value.trim());
+  const escapeWifi = value => String(value || "").replace(/([\\;,:\"])/g, "\\$1");
+  const escapeVCard = value => String(value || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+
+  function buildVCard() {
+    const first = escapeVCard(elements.vFirst.value.trim());
+    const last = escapeVCard(elements.vLast.value.trim());
+    const full = [elements.vFirst.value.trim(), elements.vLast.value.trim()].filter(Boolean).join(" ");
+    const lines = ["BEGIN:VCARD", "VERSION:3.0", `N:${last};${first};;;`, `FN:${escapeVCard(full)}`];
+    if (elements.vOrg.value.trim()) lines.push(`ORG:${escapeVCard(elements.vOrg.value.trim())}`);
+    if (elements.vTitle.value.trim()) lines.push(`TITLE:${escapeVCard(elements.vTitle.value.trim())}`);
+    if (elements.vPhone.value.trim()) lines.push(`TEL;TYPE=CELL:${escapeVCard(elements.vPhone.value.trim())}`);
+    if (elements.vEmail.value.trim()) lines.push(`EMAIL:${escapeVCard(elements.vEmail.value.trim())}`);
+    if (elements.vUrl.value.trim()) lines.push(`URL:${escapeVCard(elements.vUrl.value.trim())}`);
+    const addressParts = [elements.vAddress, elements.vCity, elements.vRegion, elements.vPostal, elements.vCountry].map(el => el.value.trim());
+    if (addressParts.some(Boolean)) lines.push(`ADR;TYPE=WORK:;;${escapeVCard(addressParts[0])};${escapeVCard(addressParts[1])};${escapeVCard(addressParts[2])};${escapeVCard(addressParts[3])};${escapeVCard(addressParts[4])}`);
+    lines.push("END:VCARD");
+    return lines.join("\r\n");
   }
 
-  function isHexColor(value) {
-    return /^#[0-9a-f]{6}$/i.test(value.trim());
+  function buildWifi() {
+    const security = elements.wifiSecurity.value;
+    const ssid = escapeWifi(elements.wifiSsid.value.trim());
+    const password = security === "nopass" ? "" : escapeWifi(elements.wifiPassword.value);
+    return `WIFI:T:${security};S:${ssid};P:${password};H:${elements.wifiHidden.checked ? "true" : "false"};;`;
+  }
+
+  function getEncodedData() {
+    if (elements.type.value === "vcard") return buildVCard();
+    if (elements.type.value === "wifi") return buildWifi();
+    return elements.data.value.trim();
   }
 
   function getOptions() {
     const size = Number(elements.size.value);
-    const data = elements.data.value.trim() || " ";
-
     return {
-      width: size,
-      height: size,
-
-      type: "svg",
-
-      data,
-
-      image: logoDataUrl || undefined,
-
-      margin:
-        Math.max(
-          8,
-          Math.round(size * 0.035)
-        ),
-
-      qrOptions: {
-        errorCorrectionLevel:
-          elements.errorCorrection.value
-      },
-
-      imageOptions: {
-        crossOrigin: "anonymous",
-
-        margin:
-          Math.max(
-            3,
-            Math.round(size * 0.012)
-          ),
-
-        imageSize: 0.32,
-        hideBackgroundDots: true
-      },
-
-      dotsOptions: {
-        color: elements.foreground.value,
-        type: elements.dotStyle.value
-      },
-
-      cornersSquareOptions: {
-        color: elements.foreground.value,
-        type: "square"
-      },
-
-      cornersDotOptions: {
-        color: elements.foreground.value,
-        type: "square"
-      },
-
-      backgroundOptions: {
-        color: elements.background.value
-      }
+      width: size, height: size, type: "svg", data: getEncodedData() || " ", image: logoDataUrl || undefined,
+      margin: Math.max(8, Math.round(size * 0.035)),
+      qrOptions: { errorCorrectionLevel: elements.errorCorrection.value },
+      imageOptions: { crossOrigin: "anonymous", margin: Math.max(3, Math.round(size * 0.012)), imageSize: 0.32, hideBackgroundDots: true },
+      dotsOptions: { color: elements.foreground.value, type: elements.dotStyle.value },
+      cornersSquareOptions: { color: elements.foreground.value, type: "square" },
+      cornersDotOptions: { color: elements.foreground.value, type: "square" },
+      backgroundOptions: { color: elements.background.value }
     };
   }
 
-  function render() {
-    if (!window.QRCodeStyling) {
-      setStatus("QR library unavailable");
-      return;
-    }
-
-    const options = getOptions();
-
-    elements.sizeOutput.value =
-      `${options.width} px`;
-
-    if (!qrCode) {
-      qrCode =
-        new QRCodeStyling(options);
-
-      qrCode.append(elements.preview);
-    } else {
-      qrCode.update(options);
-    }
-
-    setStatus(
-      elements.data.value.trim()
-        ? "Ready"
-        : "Enter content"
-    );
+  function hasMinimumContent() {
+    if (elements.type.value === "wifi") return Boolean(elements.wifiSsid.value.trim());
+    if (elements.type.value === "vcard") return Boolean(elements.vFirst.value.trim() || elements.vLast.value.trim() || elements.vOrg.value.trim());
+    return Boolean(elements.data.value.trim());
   }
 
-  function syncColor(
-    colorInput,
-    textInput,
-    source
-  ) {
-    if (source === "picker") {
-      textInput.value =
-        colorInput.value.toLowerCase();
+  function render() {
+    if (!window.QRCodeStyling) { setStatus("No se pudo cargar la biblioteca QR"); return; }
+    const options = getOptions();
+    elements.sizeOutput.value = `${options.width} px`;
+    if (!qrCode) { qrCode = new QRCodeStyling(options); qrCode.append(elements.preview); }
+    else qrCode.update(options);
+    setStatus(hasMinimumContent() ? "Listo" : "Completa los datos");
+  }
 
-      render();
-      return;
-    }
+  function updateType() {
+    $$("[data-type-panel]").forEach(panel => { panel.hidden = panel.dataset.typePanel !== elements.type.value; });
+    render();
+  }
 
-    const normalized =
-      textInput.value.trim();
-
-    if (isHexColor(normalized)) {
-      colorInput.value = normalized;
-
-      textInput.setCustomValidity("");
-
-      render();
-    } else {
-      textInput.setCustomValidity(
-        "Use a six-digit hex color, for example #111827."
-      );
-    }
+  function syncColor(colorInput, textInput, source) {
+    if (source === "picker") { textInput.value = colorInput.value.toLowerCase(); render(); return; }
+    const normalized = textInput.value.trim();
+    if (isHexColor(normalized)) { colorInput.value = normalized; textInput.setCustomValidity(""); render(); }
+    else textInput.setCustomValidity("Usa un color hexadecimal de seis dígitos, por ejemplo #002992.");
   }
 
   function download(extension) {
-    if (
-      !qrCode ||
-      !elements.data.value.trim()
-    ) {
-      setStatus("Enter content first");
-      elements.data.focus();
-
-      return;
-    }
-
-    qrCode.download({
-      name: "qr-code",
-      extension
-    });
-
-    setStatus(
-      `${extension.toUpperCase()} downloaded`
-    );
+    if (!qrCode || !hasMinimumContent()) { setStatus("Completa los datos antes de descargar"); return; }
+    qrCode.download({ name: `el-nacional-qr-${elements.type.value}`, extension });
+    setStatus(`${extension.toUpperCase()} descargado`);
   }
 
-  elements.form.addEventListener(
-    "submit",
-    event => event.preventDefault()
-  );
+  elements.form.addEventListener("submit", event => event.preventDefault());
+  elements.type.addEventListener("change", updateType);
+  elements.size.addEventListener("input", render);
+  elements.errorCorrection.addEventListener("change", render);
+  elements.dotStyle.addEventListener("change", render);
+  $$("textarea, input, select").filter(el => ![elements.size, elements.errorCorrection, elements.dotStyle, elements.type, elements.foreground, elements.foregroundHex, elements.background, elements.backgroundHex, elements.logoFile].includes(el)).forEach(el => el.addEventListener("input", render));
+  elements.wifiSecurity.addEventListener("change", () => { elements.wifiPassword.disabled = elements.wifiSecurity.value === "nopass"; render(); });
+  elements.foreground.addEventListener("input", () => syncColor(elements.foreground, elements.foregroundHex, "picker"));
+  elements.foregroundHex.addEventListener("input", () => syncColor(elements.foreground, elements.foregroundHex, "text"));
+  elements.background.addEventListener("input", () => syncColor(elements.background, elements.backgroundHex, "picker"));
+  elements.backgroundHex.addEventListener("input", () => syncColor(elements.background, elements.backgroundHex, "text"));
 
-  elements.data.addEventListener(
-    "input",
-    render
-  );
+  elements.logoFile.addEventListener("change", event => {
+    const [file] = event.target.files;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { logoDataUrl = String(reader.result || ""); elements.removeLogo.disabled = false; render(); setStatus("Logotipo añadido"); };
+    reader.readAsDataURL(file);
+  });
+  elements.removeLogo.addEventListener("click", () => { logoDataUrl = ""; elements.logoFile.value = ""; elements.removeLogo.disabled = true; render(); setStatus("Logotipo eliminado"); });
+  elements.downloadPng.addEventListener("click", () => download("png"));
+  elements.downloadSvg.addEventListener("click", () => download("svg"));
 
-  elements.size.addEventListener(
-    "input",
-    render
-  );
+  elements.reset.addEventListener("click", () => {
+    elements.form.reset();
+    elements.type.value = defaults.type;
+    elements.data.value = defaults.data;
+    elements.size.value = defaults.size;
+    elements.foreground.value = defaults.foreground;
+    elements.foregroundHex.value = defaults.foreground;
+    elements.background.value = defaults.background;
+    elements.backgroundHex.value = defaults.background;
+    elements.errorCorrection.value = defaults.errorCorrection;
+    elements.dotStyle.value = defaults.dotStyle;
+    elements.vOrg.value = "El Nacional";
+    elements.vUrl.value = "https://www.elnacional.com/";
+    logoDataUrl = "";
+    elements.removeLogo.disabled = true;
+    updateType();
+    setStatus("Restablecido");
+  });
 
-  elements.errorCorrection.addEventListener(
-    "change",
-    render
-  );
-
-  elements.dotStyle.addEventListener(
-    "change",
-    render
-  );
-
-  elements.foreground.addEventListener(
-    "input",
-    () =>
-      syncColor(
-        elements.foreground,
-        elements.foregroundHex,
-        "picker"
-      )
-  );
-
-  elements.foregroundHex.addEventListener(
-    "input",
-    () =>
-      syncColor(
-        elements.foreground,
-        elements.foregroundHex,
-        "text"
-      )
-  );
-
-  elements.background.addEventListener(
-    "input",
-    () =>
-      syncColor(
-        elements.background,
-        elements.backgroundHex,
-        "picker"
-      )
-  );
-
-  elements.backgroundHex.addEventListener(
-    "input",
-    () =>
-      syncColor(
-        elements.background,
-        elements.backgroundHex,
-        "text"
-      )
-  );
-
-  elements.logoFile.addEventListener(
-    "change",
-    event => {
-      const [file] =
-        event.target.files;
-
-      if (!file) {
-        return;
-      }
-
-      const reader =
-        new FileReader();
-
-      reader.onload = () => {
-        logoDataUrl =
-          String(reader.result || "");
-
-        elements.removeLogo.disabled =
-          false;
-
-        render();
-
-        setStatus("Logo added");
-      };
-
-      reader.readAsDataURL(file);
-    }
-  );
-
-  elements.removeLogo.addEventListener(
-    "click",
-    () => {
-      logoDataUrl = "";
-
-      elements.logoFile.value = "";
-
-      elements.removeLogo.disabled =
-        true;
-
-      render();
-
-      setStatus("Logo removed");
-    }
-  );
-
-  elements.downloadPng.addEventListener(
-    "click",
-    () => download("png")
-  );
-
-  elements.downloadSvg.addEventListener(
-    "click",
-    () => download("svg")
-  );
-
-  elements.reset.addEventListener(
-    "click",
-    () => {
-      elements.data.value =
-        defaults.data;
-
-      elements.size.value =
-        defaults.size;
-
-      elements.foreground.value =
-        defaults.foreground;
-
-      elements.foregroundHex.value =
-        defaults.foreground;
-
-      elements.background.value =
-        defaults.background;
-
-      elements.backgroundHex.value =
-        defaults.background;
-
-      elements.errorCorrection.value =
-        defaults.errorCorrection;
-
-      elements.dotStyle.value =
-        defaults.dotStyle;
-
-      elements.logoFile.value = "";
-
-      logoDataUrl = "";
-
-      elements.removeLogo.disabled =
-        true;
-
-      render();
-
-      setStatus("Reset");
-    }
-  );
-
-  window.addEventListener(
-    "DOMContentLoaded",
-    render
-  );
+  window.addEventListener("DOMContentLoaded", updateType);
 })();
